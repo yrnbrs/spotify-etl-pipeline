@@ -2,7 +2,6 @@ import os
 import json
 from datetime import datetime
 from pathlib import Path
-
 import spotipy
 from dotenv import load_dotenv
 from spotipy.oauth2 import SpotifyOAuth
@@ -23,11 +22,12 @@ print("Redirect URI:", REDIRECT_URI)
 # 2- connect to Spotify API using Spotipy
 spotify = spotipy.Spotify(
     auth_manager=SpotifyOAuth(
-        client_id=CLIENT_ID,
-        client_secret=CLIENT_SECRET,
-        redirect_uri=REDIRECT_URI,
-        scope="user-read-recently-played"
-    )
+    client_id=CLIENT_ID,
+    client_secret=CLIENT_SECRET,
+    redirect_uri=REDIRECT_URI,
+    scope="user-read-recently-played",
+    cache_path=str(BASE_DIR / ".cache")
+)
 )
 
 # 3- get recently played tracks from Spotify
