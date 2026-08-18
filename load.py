@@ -13,7 +13,7 @@ load_dotenv(BASE_DIR / ".env", override=True)
 DB_NAME = os.getenv("POSTGRES_DB")
 DB_USER = os.getenv("POSTGRES_USER")
 DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-DB_HOST = os.getenv("POSTGRES_HOST")
+DB_HOST = os.getenv("POSTGRES_HOST_OVERRIDE") or os.getenv("POSTGRES_HOST")
 DB_PORT = os.getenv("POSTGRES_PORT")
 
 # 3- find the most recently created JSON file
