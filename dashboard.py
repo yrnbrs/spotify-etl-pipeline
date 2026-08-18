@@ -1,37 +1,54 @@
 import os
 import html
+
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 
+
 load_dotenv()
 
-DB_NAME = os.getenv("POSTGRES_DB")
-DB_USER = os.getenv("POSTGRES_USER")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-DB_HOST = os.getenv("POSTGRES_HOST")
-DB_PORT = os.getenv("POSTGRES_PORT")
 
 def get_engine():
+    database_url = os.getenv("DATABASE_URL")
+
+    if database_url:
+        return create_engine(
+            database_url,
+            pool_pre_ping=True
+        )
+
+    db_name = os.getenv("POSTGRES_DB")
+    db_user = os.getenv("POSTGRES_USER")
+    db_password = os.getenv("POSTGRES_PASSWORD")
+    db_host = os.getenv("POSTGRES_HOST")
+    db_port = os.getenv("POSTGRES_PORT")
+
     database_url = URL.create(
         drivername="postgresql+psycopg",
-        username=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=int(DB_PORT),
-        database=DB_NAME
+        username=db_user,
+        password=db_password,
+        host=db_host,
+        port=int(db_port),
+        database=db_name
     )
 
-    return create_engine(database_url)
+    return create_engine(
+        database_url,
+        pool_pre_ping=True
+    )
+
 
 st.set_page_config(
     page_title="My Spotify Wrapped",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
 
 st.markdown(
     """
@@ -244,7 +261,9 @@ div[data-testid="stVerticalBlock"] {
     unsafe_allow_html=True
 )
 
+
 engine = get_engine()
+
 
 overview = pd.read_sql(
     """
@@ -253,6 +272,7 @@ overview = pd.read_sql(
     """,
     engine
 )
+
 
 top_tracks = pd.read_sql(
     """
@@ -264,6 +284,7 @@ top_tracks = pd.read_sql(
     engine
 )
 
+
 top_artists = pd.read_sql(
     """
     SELECT *
@@ -274,6 +295,7 @@ top_artists = pd.read_sql(
     engine
 )
 
+
 daily_stats = pd.read_sql(
     """
     SELECT *
@@ -283,9 +305,12 @@ daily_stats = pd.read_sql(
     engine
 )
 
+
 engine.dispose()
 
+
 row = overview.iloc[0]
+
 
 st.markdown(
     """
@@ -298,7 +323,9 @@ A personal overview of your recent Spotify listening activity.
     unsafe_allow_html=True
 )
 
+
 col1, col2, col3, col4 = st.columns(4)
+
 
 with col1:
     st.markdown(
@@ -309,6 +336,7 @@ with col1:
         unsafe_allow_html=True
     )
 
+
 with col2:
     st.markdown(
         f'<div class="metric-card">'
@@ -317,6 +345,7 @@ with col2:
         f'</div>',
         unsafe_allow_html=True
     )
+
 
 with col3:
     st.markdown(
@@ -327,6 +356,7 @@ with col3:
         unsafe_allow_html=True
     )
 
+
 with col4:
     st.markdown(
         f'<div class="metric-card">'
@@ -336,13 +366,22 @@ with col4:
         unsafe_allow_html=True
     )
 
+
 if not top_artists.empty:
 
     top_artist = top_artists.iloc[0]
 
-    artist_name = html.escape(str(top_artist["artist_name"]))
-    play_count = int(top_artist["play_count"])
-    total_minutes = float(top_artist["total_minutes"])
+    artist_name = html.escape(
+        str(top_artist["artist_name"])
+    )
+
+    play_count = int(
+        top_artist["play_count"]
+    )
+
+    total_minutes = float(
+        top_artist["total_minutes"]
+    )
 
     st.markdown(
         '<div class="section-label">Your favorite</div>'
@@ -352,13 +391,18 @@ if not top_artists.empty:
 
     top_artist_html = (
         '<div class="top-artist-card">'
-        '<div class="top-artist-small">Most played artist</div>'
-        f'<div class="top-artist-name">{artist_name}</div>'
+        '<div class="top-artist-small">'
+        'Most played artist'
+        '</div>'
+        f'<div class="top-artist-name">'
+        f'{artist_name}'
+        f'</div>'
         f'<div class="top-artist-stat">'
-        f'{play_count} plays &nbsp;&nbsp; / &nbsp;&nbsp; '
+        f'{play_count} plays'
+        f' &nbsp;&nbsp; / &nbsp;&nbsp; '
         f'{total_minutes:.1f} minutes listened'
-        '</div>'
-        '</div>'
+        f'</div>'
+        f'</div>'
     )
 
     st.markdown(
@@ -366,10 +410,12 @@ if not top_artists.empty:
         unsafe_allow_html=True
     )
 
+
 left_col, right_col = st.columns(
     [1, 1],
     gap="large"
 )
+
 
 with left_col:
 
@@ -392,7 +438,11 @@ with left_col:
 
     artist_chart.update_traces(
         marker_color="#E8C8D0",
-        hovertemplate="<b>%{y}</b><br>%{x} plays<extra></extra>"
+        hovertemplate=(
+            "<b>%{y}</b><br>"
+            "%{x} plays"
+            "<extra></extra>"
+        )
     )
 
     artist_chart.update_layout(
@@ -439,6 +489,7 @@ with left_col:
         }
     )
 
+
 with right_col:
 
     st.markdown(
@@ -447,20 +498,41 @@ with right_col:
         unsafe_allow_html=True
     )
 
-    for index, track in top_tracks.head(7).reset_index(drop=True).iterrows():
+    for index, track in (
+        top_tracks
+        .head(7)
+        .reset_index(drop=True)
+        .iterrows()
+    ):
 
-        track_name = html.escape(str(track["track_name"]))
-        track_artist = html.escape(str(track["artist_name"]))
-        play_count = int(track["play_count"])
+        track_name = html.escape(
+            str(track["track_name"])
+        )
+
+        track_artist = html.escape(
+            str(track["artist_name"])
+        )
+
+        track_play_count = int(
+            track["play_count"]
+        )
 
         track_html = (
             f'<div class="track-row">'
-            f'<div class="track-number">{index + 1:02}</div>'
-            f'<div class="track-info">'
-            f'<div class="track-name">{track_name}</div>'
-            f'<div class="track-artist">{track_artist}</div>'
+            f'<div class="track-number">'
+            f'{index + 1:02}'
             f'</div>'
-            f'<div class="track-count">{play_count} plays</div>'
+            f'<div class="track-info">'
+            f'<div class="track-name">'
+            f'{track_name}'
+            f'</div>'
+            f'<div class="track-artist">'
+            f'{track_artist}'
+            f'</div>'
+            f'</div>'
+            f'<div class="track-count">'
+            f'{track_play_count} plays'
+            f'</div>'
             f'</div>'
         )
 
@@ -469,11 +541,13 @@ with right_col:
             unsafe_allow_html=True
         )
 
+
 st.markdown(
     '<div class="section-label">Over time</div>'
     '<div class="section-title">Listening activity</div>',
     unsafe_allow_html=True
 )
+
 
 daily_chart = px.area(
     daily_stats,
@@ -484,6 +558,7 @@ daily_chart = px.area(
         "play_count": ""
     }
 )
+
 
 daily_chart.update_traces(
 
@@ -500,6 +575,7 @@ daily_chart.update_traces(
         "<extra></extra>"
     )
 )
+
 
 daily_chart.update_layout(
 
@@ -539,6 +615,7 @@ daily_chart.update_layout(
     height=400
 )
 
+
 st.plotly_chart(
     daily_chart,
     width="stretch",
@@ -546,6 +623,7 @@ st.plotly_chart(
         "displayModeBar": False
     }
 )
+
 
 st.markdown(
     """
