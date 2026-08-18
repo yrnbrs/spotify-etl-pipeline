@@ -2,9 +2,11 @@ import os
 import html
 import pandas as pd
 import plotly.express as px
-import psycopg
 import streamlit as st
 from dotenv import load_dotenv
+from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
+
 load_dotenv()
 
 DB_NAME = os.getenv("POSTGRES_DB")
@@ -13,14 +15,17 @@ DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
 DB_HOST = os.getenv("POSTGRES_HOST")
 DB_PORT = os.getenv("POSTGRES_PORT")
 
-def get_connection():
-    return psycopg.connect(
-        dbname=DB_NAME,
-        user=DB_USER,
+def get_engine():
+    database_url = URL.create(
+        drivername="postgresql+psycopg",
+        username=DB_USER,
         password=DB_PASSWORD,
         host=DB_HOST,
-        port=DB_PORT
+        port=int(DB_PORT),
+        database=DB_NAME
     )
+
+    return create_engine(database_url)
 
 st.set_page_config(
     page_title="My Spotify Wrapped",
@@ -239,14 +244,14 @@ div[data-testid="stVerticalBlock"] {
     unsafe_allow_html=True
 )
 
-conn = get_connection()
+engine = get_engine()
 
 overview = pd.read_sql(
     """
     SELECT *
     FROM analytics.overview
     """,
-    conn
+    engine
 )
 
 top_tracks = pd.read_sql(
@@ -256,7 +261,7 @@ top_tracks = pd.read_sql(
     ORDER BY play_count DESC, total_minutes DESC
     LIMIT 10
     """,
-    conn
+    engine
 )
 
 top_artists = pd.read_sql(
@@ -266,7 +271,7 @@ top_artists = pd.read_sql(
     ORDER BY play_count DESC, total_minutes DESC
     LIMIT 10
     """,
-    conn
+    engine
 )
 
 daily_stats = pd.read_sql(
@@ -275,10 +280,10 @@ daily_stats = pd.read_sql(
     FROM analytics.daily_stats
     ORDER BY listening_date
     """,
-    conn
+    engine
 )
 
-conn.close()
+engine.dispose()
 
 row = overview.iloc[0]
 
@@ -361,7 +366,6 @@ if not top_artists.empty:
         unsafe_allow_html=True
     )
 
-
 left_col, right_col = st.columns(
     [1, 1],
     gap="large"
@@ -429,7 +433,7 @@ with left_col:
 
     st.plotly_chart(
         artist_chart,
-        use_container_width=True,
+        width="stretch",
         config={
             "displayModeBar": False
         }
@@ -537,7 +541,7 @@ daily_chart.update_layout(
 
 st.plotly_chart(
     daily_chart,
-    use_container_width=True,
+    width="stretch",
     config={
         "displayModeBar": False
     }
